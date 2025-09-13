@@ -10,6 +10,7 @@ import requests
 import json
 import streamlit as st
 from crewai import Agent, Task, Crew, LLM
+from crewai.tools import BaseTool
 import sys
 from io import StringIO
 import contextlib
@@ -27,6 +28,26 @@ def fetch_species_data_streamlit(query: str) -> dict:
         dict: JSON response from GBIF API via MCP tool or error information
     """
     return fetch_species(query)
+
+class SpeciesTool(BaseTool):
+    """CrewAI-compatible wrapper for the species MCP tool."""
+    name: str = "fetch_species"
+    description: str = "Fetch species data from GBIF API using MCP tool. Input should be a species name."
+    
+    def _run(self, species_name: str) -> str:
+        """Execute the species tool and return JSON string."""
+        result = fetch_species(species_name)
+        return json.dumps(result, indent=2)
+
+class ClimateTool(BaseTool):
+    """CrewAI-compatible wrapper for the climate MCP tool."""
+    name: str = "fetch_climate_data"
+    description: str = "Fetch climate data from Open Meteo API using MCP tool. Input should be a location name."
+    
+    def _run(self, location: str) -> str:
+        """Execute the climate tool and return JSON string."""
+        result = fetch_climate_data(location)
+        return json.dumps(result, indent=2)
 
 @contextlib.contextmanager
 def capture_output():
@@ -112,8 +133,12 @@ def run_wildlife_analysis_streamlit(species_query: str, progress_callback=None):
     # Get climate data using MCP tool
     climate_data = fetch_climate_data("New York")
     
+    # Create CrewAI-compatible tool instances
+    species_tool = SpeciesTool()
+    climate_tool = ClimateTool()
+    
     # Register MCP tools with the research agent
-    research_agent.tools = [fetch_species, fetch_climate_data]
+    research_agent.tools = [species_tool, climate_tool]
     
     # Define Task 1: Fetch Species Data using MCP tool
     research_task = Task(

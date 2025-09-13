@@ -3,9 +3,33 @@ Wildlife Insight Agent - Main application entry point.
 Uses CrewAI framework with MCP tools for wildlife research and reporting.
 """
 import sys
+import json
 from crewai import Agent, Task, Crew
+from crewai.tools import BaseTool
 from tools.species_tool import fetch_species
 from tools.climate_tool import fetch_climate_data
+
+
+class SpeciesTool(BaseTool):
+    """CrewAI-compatible wrapper for the species MCP tool."""
+    name: str = "fetch_species"
+    description: str = "Fetch species data from GBIF API using MCP tool. Input should be a species name."
+    
+    def _run(self, species_name: str) -> str:
+        """Execute the species tool and return JSON string."""
+        result = fetch_species(species_name)
+        return json.dumps(result, indent=2)
+
+
+class ClimateTool(BaseTool):
+    """CrewAI-compatible wrapper for the climate MCP tool."""
+    name: str = "fetch_climate_data"
+    description: str = "Fetch climate data from Open Meteo API using MCP tool. Input should be a location name."
+    
+    def _run(self, location: str) -> str:
+        """Execute the climate tool and return JSON string."""
+        result = fetch_climate_data(location)
+        return json.dumps(result, indent=2)
 
 
 def create_research_agent():
@@ -147,8 +171,12 @@ def main():
         # Create tasks
         tasks = create_tasks(research_agent, analysis_agent, report_agent)
         
+        # Create CrewAI-compatible tool instances
+        species_tool = SpeciesTool()
+        climate_tool = ClimateTool()
+        
         # Register MCP tools with agents
-        research_agent.tools = [fetch_species, fetch_climate_data]
+        research_agent.tools = [species_tool, climate_tool]
         
         # Create and configure the crew
         crew = Crew(
