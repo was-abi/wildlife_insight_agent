@@ -46,10 +46,24 @@ st.markdown("""
     
     .metric-card {
         background: white;
-        padding: 1rem;
+        padding: 1.5rem;
         border-radius: 10px;
         box-shadow: 0 4px 16px rgba(0,0,0,0.1);
         border-left: 4px solid #2E8B57;
+        margin: 1rem 0;
+        min-height: 150px;
+    }
+    
+    .metric-card h3 {
+        color: #2E8B57 !important;
+        margin-bottom: 1rem !important;
+        font-size: 1.2rem !important;
+    }
+    
+    .metric-card p {
+        color: #333 !important;
+        line-height: 1.6 !important;
+        font-size: 0.95rem !important;
     }
     
     .stButton > button {
@@ -72,6 +86,30 @@ st.markdown("""
         padding: 1rem;
         border-radius: 10px;
         margin: 1rem 0;
+    }
+    
+    /* Ensure text visibility */
+    .stMarkdown p {
+        color: #333 !important;
+    }
+    
+    .stMarkdown h2 {
+        color: #2E8B57 !important;
+        margin-bottom: 1rem !important;
+    }
+    
+    .stMarkdown h3 {
+        color: #2E8B57 !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    /* Welcome section specific styling */
+    .welcome-section {
+        background: rgba(255, 255, 255, 0.9);
+        padding: 2rem;
+        border-radius: 15px;
+        margin: 2rem 0;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -323,6 +361,7 @@ def main():
     else:
         # Welcome screen
         st.markdown("## 🌟 Welcome to Wildlife Insight Agent")
+        st.markdown("### Discover the fascinating world of wildlife through AI-powered research")
         
         # Feature highlights
         col1, col2, col3 = st.columns(3)
@@ -330,56 +369,89 @@ def main():
         with col1:
             st.markdown("""
             <div class="metric-card">
-                <h3>🔬 AI-Powered Research</h3>
-                <p>Three specialized AI agents work together to research, analyze, and report on wildlife species data.</p>
+                <h3 style="color: #2E8B57; margin-bottom: 1rem;">🔬 AI-Powered Research</h3>
+                <p style="color: #333; line-height: 1.6;">Three specialized AI agents work together to research, analyze, and report on wildlife species data.</p>
             </div>
             """, unsafe_allow_html=True)
         
         with col2:
             st.markdown("""
             <div class="metric-card">
-                <h3>🌍 Global Data</h3>
-                <p>Access to millions of species records from the Global Biodiversity Information Facility (GBIF).</p>
+                <h3 style="color: #2E8B57; margin-bottom: 1rem;">🌍 Global Data</h3>
+                <p style="color: #333; line-height: 1.6;">Access to millions of species records from the Global Biodiversity Information Facility (GBIF).</p>
             </div>
             """, unsafe_allow_html=True)
         
         with col3:
             st.markdown("""
             <div class="metric-card">
-                <h3>📚 Educational Reports</h3>
-                <p>Beginner-friendly conservation reports that make complex data accessible to everyone.</p>
+                <h3 style="color: #2E8B57; margin-bottom: 1rem;">📚 Educational Reports</h3>
+                <p style="color: #333; line-height: 1.6;">Beginner-friendly conservation reports that make complex data accessible to everyone.</p>
             </div>
             """, unsafe_allow_html=True)
         
         # Sample species showcase
         st.markdown("## 🐾 Featured Species")
+        st.markdown("**Explore these popular species to get started:**")
         
         showcase_col1, showcase_col2, showcase_col3, showcase_col4 = st.columns(4)
         
         with showcase_col1:
-            st.image("https://images.unsplash.com/photo-1561731216-c3a4d99437d5?w=300&h=200&fit=crop", caption="🐅 Tigers")
-            st.markdown("Explore tiger species and conservation status worldwide.")
+            try:
+                st.image("https://images.unsplash.com/photo-1561731216-c3a4d99437d5?w=300&h=200&fit=crop", caption="🐅 Tigers")
+            except:
+                st.markdown("🐅 **Tigers**")
+            st.markdown("**Explore tiger species and conservation status worldwide.**")
         
         with showcase_col2:
-            st.image("https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300&h=200&fit=crop", caption="🐋 Whales")
-            st.markdown("Discover whale species and marine conservation efforts.")
+            try:
+                st.image("https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300&h=200&fit=crop", caption="🐋 Whales")
+            except:
+                st.markdown("🐋 **Whales**")
+            st.markdown("**Discover whale species and marine conservation efforts.**")
         
         with showcase_col3:
-            st.image("https://images.unsplash.com/photo-1564760055775-d63b17a55c44?w=300&h=200&fit=crop", caption="🐘 Elephants")
-            st.markdown("Learn about elephant populations and habitat protection.")
+            try:
+                st.image("https://images.unsplash.com/photo-1564760055775-d63b17a55c44?w=300&h=200&fit=crop", caption="🐘 Elephants")
+            except:
+                st.markdown("🐘 **Elephants**")
+            st.markdown("**Learn about elephant populations and habitat protection.**")
         
         with showcase_col4:
-            st.image("https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=300&h=200&fit=crop", caption="🐶 Pugs")
-            st.markdown("Investigate pug-related species across different kingdoms.")
+            try:
+                st.image("https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=300&h=200&fit=crop", caption="🐶 Pugs")
+            except:
+                st.markdown("🐶 **Pugs**")
+            st.markdown("**Investigate pug-related species across different kingdoms.**")
         
         # Instructions
         st.markdown("## 🚀 How to Use")
-        st.markdown("""
-        1. **Select a species** from the sidebar or enter a custom species name
-        2. **Click 'Start Analysis'** to begin the AI-powered research process
-        3. **View the results** in multiple formats: full report, data insights, and technical details
-        4. **Explore the findings** to learn about conservation status and biodiversity patterns
-        """)
+        st.markdown("**Follow these simple steps to analyze wildlife species:**")
+        
+        instruction_col1, instruction_col2 = st.columns(2)
+        
+        with instruction_col1:
+            st.markdown("""
+            **Step 1: Choose Your Species**
+            - Select from predefined options (Tiger, Whale, Elephant, Pug)
+            - Or enter a custom species name
+            
+            **Step 2: Start Analysis**
+            - Click the 'Start Analysis' button
+            - Watch the AI agents work together
+            """)
+        
+        with instruction_col2:
+            st.markdown("""
+            **Step 3: Explore Results**
+            - Read the full conservation report
+            - View data visualizations and insights
+            - Check technical details and metadata
+            
+            **Step 4: Learn & Discover**
+            - Understand conservation status
+            - Explore biodiversity patterns
+            """)
         
         # Footer
         st.markdown("---")

@@ -49,10 +49,24 @@ st.markdown("""
     
     .metric-card {
         background: white;
-        padding: 1rem;
+        padding: 1.5rem;
         border-radius: 10px;
         box-shadow: 0 4px 16px rgba(0,0,0,0.1);
         border-left: 4px solid #2E8B57;
+        margin: 1rem 0;
+        min-height: 150px;
+    }
+    
+    .metric-card h3 {
+        color: #2E8B57 !important;
+        margin-bottom: 1rem !important;
+        font-size: 1.2rem !important;
+    }
+    
+    .metric-card p {
+        color: #333 !important;
+        line-height: 1.6 !important;
+        font-size: 0.95rem !important;
     }
     
     .stButton > button {
@@ -75,6 +89,30 @@ st.markdown("""
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+    }
+    
+    /* Ensure text visibility */
+    .stMarkdown p {
+        color: #333 !important;
+    }
+    
+    .stMarkdown h2 {
+        color: #2E8B57 !important;
+        margin-bottom: 1rem !important;
+    }
+    
+    .stMarkdown h3 {
+        color: #2E8B57 !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    /* Welcome section specific styling */
+    .welcome-section {
+        background: rgba(255, 255, 255, 0.9);
+        padding: 2rem;
+        border-radius: 15px;
+        margin: 2rem 0;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -386,6 +424,7 @@ def main():
     else:
         # Welcome screen
         st.markdown("## 🌟 Welcome to Wildlife Insight Agent")
+        st.markdown("### Discover the fascinating world of wildlife through AI-powered research")
         
         # Feature highlights
         col1, col2, col3 = st.columns(3)
@@ -393,24 +432,24 @@ def main():
         with col1:
             st.markdown("""
             <div class="metric-card">
-                <h3>🔬 AI-Powered Research</h3>
-                <p>Three specialized AI agents work together to research, analyze, and report on wildlife species data.</p>
+                <h3 style="color: #2E8B57; margin-bottom: 1rem;">🔬 AI-Powered Research</h3>
+                <p style="color: #333; line-height: 1.6;">Three specialized AI agents work together to research, analyze, and report on wildlife species data.</p>
             </div>
             """, unsafe_allow_html=True)
         
         with col2:
             st.markdown("""
             <div class="metric-card">
-                <h3>🌍 Global Data</h3>
-                <p>Access to millions of species records from the Global Biodiversity Information Facility (GBIF).</p>
+                <h3 style="color: #2E8B57; margin-bottom: 1rem;">🌍 Global Data</h3>
+                <p style="color: #333; line-height: 1.6;">Access to millions of species records from the Global Biodiversity Information Facility (GBIF).</p>
             </div>
             """, unsafe_allow_html=True)
         
         with col3:
             st.markdown("""
             <div class="metric-card">
-                <h3>📚 Educational Reports</h3>
-                <p>Beginner-friendly conservation reports that make complex data accessible to everyone.</p>
+                <h3 style="color: #2E8B57; margin-bottom: 1rem;">📚 Educational Reports</h3>
+                <p style="color: #333; line-height: 1.6;">Beginner-friendly conservation reports that make complex data accessible to everyone.</p>
             </div>
             """, unsafe_allow_html=True)
         
