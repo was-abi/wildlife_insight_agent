@@ -2,77 +2,99 @@
 
 ## Overview
 
-The Wildlife Insight Agent is a Python application that implements a multi-agent system using the CrewAI framework to automate wildlife species research and reporting. The system follows a pipeline architecture where three specialized AI agents work sequentially to fetch, analyze, and report on biodiversity data from the GBIF API.
+The Wildlife Insight Agent is a Python application that implements a multi-agent system using the CrewAI framework and Model Context Protocol (MCP) to automate wildlife species and climate research and reporting. The system follows a pipeline architecture where three specialized AI agents work sequentially to fetch, analyze, and report on biodiversity data from the GBIF API and climate data from weather APIs using standardized MCP tools.
 
 ## Architecture
 
-The system follows a linear pipeline architecture with three main components:
+The system follows a linear pipeline architecture with four main tasks and MCP tool integration:
 
 ```mermaid
 graph LR
-    A[Research Agent] --> B[Analysis Agent]
-    B --> C[Report Agent]
-    D[GBIF API] --> A
-    C --> E[Final Report]
+    A[Research Agent - Task 1] --> B[Research Agent - Task 2]
+    B --> C[Analysis Agent - Task 3]
+    C --> D[Report Agent - Task 4]
+    E[MCP fetch_species] --> A
+    F[MCP fetch_climate_data] --> B
+    G[GBIF API] --> E
+    H[Open Meteo API] --> F
+    D --> I[Final Report]
 ```
 
 ### Core Components
 
 1. **CrewAI Framework**: Orchestrates the multi-agent workflow
-2. **GBIF API Client**: Handles external API communication
-3. **Agent Pipeline**: Sequential execution of specialized agents
-4. **Data Flow**: Context passing between agents
+2. **MCP Tools**: Standardized protocol tools for external API communication
+3. **Agent Pipeline**: Sequential execution of specialized agents across four tasks
+4. **Data Flow**: Context passing between tasks
+5. **External APIs**: GBIF for species data, Open Meteo for climate data
 
 ## Components and Interfaces
 
 ### 1. Main Application (`main.py`)
 
-**Purpose**: Entry point and orchestration of the CrewAI pipeline
+**Purpose**: Entry point and orchestration of the CrewAI pipeline with MCP tool registration
 
 **Key Functions**:
-- `fetch_species_data(query: str) -> dict`: Helper function for GBIF API calls
+- MCP tool registration for fetch_species and fetch_climate_data
 - `main()`: Initializes agents, tasks, and executes the crew
+- Agent and task configuration
 
 **Dependencies**:
 - `crewai` for agent framework
-- `requests` for HTTP API calls
+- `mcp` for Model Context Protocol
+- Tool imports from tools/ directory
 
-### 2. Research Agent
+### 2. MCP Tools Directory (`tools/`)
+
+**Purpose**: Contains modular MCP tool implementations
+
+#### 2.1 Species Tool (`tools/species_tool.py`)
+- `fetch_species(species_name: str) -> dict`: MCP tool for GBIF API calls
+- Handles species data retrieval and error management
+
+#### 2.2 Climate Tool (`tools/climate_tool.py`)
+- `fetch_climate_data(location: str) -> dict`: MCP tool for climate API calls
+- Handles weather/climate data retrieval from Open Meteo API
+
+### 3. Research Agent
 
 **Configuration**:
 - Role: "Wildlife Researcher"
-- Goal: "Fetch species data from the GBIF API"
-- Backstory: "Expert in biodiversity datasets"
+- Goal: "Fetch data using MCP tools"
+- Backstory: "Expert in biodiversity and climate datasets"
 
 **Responsibilities**:
-- Execute API calls to GBIF species search endpoint
-- Handle API response and error cases
-- Pass raw species data to the next agent
+- Execute Task 1: Call fetch_species MCP tool with "tiger"
+- Execute Task 2: Call fetch_climate_data MCP tool with "New York"
+- Handle MCP tool responses and error cases
+- Pass raw species and climate data to the analysis agent
 
-### 3. Analysis Agent
+### 4. Analysis Agent
 
 **Configuration**:
 - Role: "Data Analyst"
-- Goal: "Analyze species occurrence data and extract key insights"
-- Backstory: "Finds endangered species and trends"
+- Goal: "Analyze fetched species and climate data"
+- Backstory: "Skilled at finding endangered species and environmental patterns"
 
 **Responsibilities**:
-- Process raw GBIF API response data
-- Extract occurrence counts and distribution information
-- Identify conservation status indicators
+- Execute Task 3: Combine results from Task 1 and Task 2 into insights
+- Process raw GBIF API response data and climate information
+- Extract occurrence counts, distribution information, and temperature patterns
+- Identify conservation status indicators and climate correlations
 - Generate structured insights for reporting
 
-### 4. Report Agent
+### 5. Report Agent
 
 **Configuration**:
 - Role: "Report Writer"
-- Goal: "Summarize the analysis in simple, beginner-friendly language"
+- Goal: "Summarize the insights in beginner-friendly language"
 - Backstory: "Writes reports for students and conservationists"
 
 **Responsibilities**:
+- Execute Task 4: Write a beginner-friendly report with species and climate insights
 - Transform technical analysis into accessible language
-- Create structured, readable reports
-- Focus on educational and conservation value
+- Create structured, readable reports combining species and environmental data
+- Focus on educational and conservation value with climate context
 
 ## Data Models
 
@@ -103,26 +125,55 @@ graph LR
 
 ### Task Context Flow
 ```python
-# Task 1 Output (Research Agent)
+# Task 1 Output (Research Agent - Species Data)
 {
-    "api_response": dict,  # Raw GBIF response
-    "query": str,          # Search query used
-    "status": str          # Success/error status
+    "species_response": dict,  # Raw GBIF response from fetch_species MCP tool
+    "query": str,              # Species query used ("tiger")
+    "status": str              # Success/error status
 }
 
-# Task 2 Output (Analysis Agent)
+# Task 2 Output (Research Agent - Climate Data)
+{
+    "climate_response": dict,  # Raw climate response from fetch_climate_data MCP tool
+    "location": str,           # Location query used ("New York")
+    "status": str              # Success/error status
+}
+
+# Task 3 Output (Analysis Agent)
 {
     "species_count": int,
     "key_species": list,
     "conservation_insights": dict,
-    "distribution_summary": str
+    "climate_summary": dict,
+    "temperature_data": dict,
+    "correlations": str
 }
 
-# Task 3 Output (Report Agent)
+# Task 4 Output (Report Agent)
 {
-    "final_report": str,   # Human-readable summary
-    "key_findings": list   # Bullet points of insights
+    "final_report": str,       # Human-readable summary
+    "key_findings": list,      # Bullet points of insights
+    "climate_context": str     # Climate-species correlations
 }
+```
+
+### MCP Tool Interfaces
+```python
+# tools/species_tool.py
+def fetch_species(species_name: str) -> dict:
+    """
+    MCP tool to fetch species data from GBIF API
+    Args: species_name - name of species to search
+    Returns: JSON response from GBIF API
+    """
+
+# tools/climate_tool.py  
+def fetch_climate_data(location: str) -> dict:
+    """
+    MCP tool to fetch climate data from Open Meteo API
+    Args: location - location name for climate data
+    Returns: JSON response with temperature and weather data
+    """
 ```
 
 ## Error Handling
@@ -140,13 +191,25 @@ graph LR
 
 ### Implementation Strategy
 ```python
-def fetch_species_data(query: str) -> dict:
+# MCP Tool Implementation Pattern
+def fetch_species(species_name: str) -> dict:
     try:
-        response = requests.get(f"https://api.gbif.org/v1/species/search?q={query}")
+        response = requests.get(f"https://api.gbif.org/v1/species/search?q={species_name}")
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
         return {"error": str(e), "results": []}
+
+def fetch_climate_data(location: str) -> dict:
+    try:
+        # For New York coordinates as example
+        lat, lon = 40.71, -74.01  # Would need geocoding for other locations
+        url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&daily=temperature_2m_max&timezone=auto"
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        return {"error": str(e), "daily": {}}
 ```
 
 ## Testing Strategy
@@ -170,9 +233,12 @@ def fetch_species_data(query: str) -> dict:
 
 ```
 wildlife_insight_agent/
-├── main.py              # Main application entry point
-├── requirements.txt     # Python dependencies
+├── main.py              # Main application entry point with MCP tool registration
+├── requirements.txt     # Python dependencies (including mcp)
 ├── README.md           # Project documentation
+├── tools/              # MCP tools directory
+│   ├── species_tool.py # GBIF species data MCP tool
+│   └── climate_tool.py # Climate data MCP tool
 └── .kiro/              # Kiro configuration
     └── specs/
         └── wildlife-insight-agent/
@@ -187,6 +253,7 @@ wildlife_insight_agent/
 - `crewai`: Multi-agent AI framework
 - `requests`: HTTP client for API calls
 - `matplotlib`: Data visualization (for potential future enhancements)
+- `mcp`: Model Context Protocol for standardized tool interfaces
 
 ### Development Dependencies
 - Standard Python libraries (json, sys, etc.)

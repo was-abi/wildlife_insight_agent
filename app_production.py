@@ -119,13 +119,11 @@ st.markdown("""
 
 def fetch_species_data_production(query: str) -> dict:
     """
-    Fetch species data from the GBIF API (Production version).
+    Fetch species data using MCP species tool (Production version).
     """
     try:
-        url = f"https://api.gbif.org/v1/species/search?q={query}"
-        response = requests.get(url, timeout=30)
-        response.raise_for_status()
-        return response.json()
+        from tools.species_tool import fetch_species
+        return fetch_species(query)
     except Exception as e:
         return {"error": str(e), "results": [], "count": 0}
 
@@ -161,10 +159,16 @@ This data helps us learn about:
 ## 🚀 Next Steps
 To get the full AI-powered analysis with detailed insights:
 1. Set up the Gemini API key in your environment
-2. Run the complete analysis pipeline
-3. Explore detailed conservation recommendations
+2. Run the complete analysis pipeline with MCP tools
+3. Explore detailed conservation recommendations with climate data
 
-*This is a demo report. Full AI analysis requires API configuration.*
+## 🔧 Technical Details
+This app uses Model Context Protocol (MCP) tools:
+- **Species Tool**: Fetches data from GBIF API via `fetch_species` MCP tool
+- **Climate Tool**: Fetches weather data via `fetch_climate_data` MCP tool
+- **AI Analysis**: CrewAI agents process combined datasets
+
+*This is a demo report. Full AI analysis with climate correlation requires API configuration.*
 """
 
 def main():
@@ -297,14 +301,14 @@ def main():
             if demo_mode:
                 result = create_demo_report(species_query, species_count)
             else:
-                # Import and use full functionality when API key is available
+                # Import and use full functionality with MCP tools when API key is available
                 try:
                     from streamlit_utils import run_wildlife_analysis_streamlit
                     def update_progress(progress, message):
                         progress_bar.progress(progress)
                         status_text.text(message)
                     
-                    result, logs, final_species_data = run_wildlife_analysis_streamlit(
+                    result, logs, final_species_data, climate_data = run_wildlife_analysis_streamlit(
                         species_query, 
                         progress_callback=update_progress
                     )

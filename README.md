@@ -1,35 +1,41 @@
-# Wildlife Insight Agent
+# Wildlife Species + Climate Insight Agent (MCP Edition)
 
-A Python-based multi-agent system using CrewAI to automatically research, analyze, and report on wildlife species data from the Global Biodiversity Information Facility (GBIF) API.
+A Python-based multi-agent system using CrewAI + MCP (Model Context Protocol) to automatically research, analyze, and report on wildlife species and climate data from multiple APIs.
 
 ## Overview
 
-The Wildlife Insight Agent uses three specialized AI agents working in sequence:
-- **Research Agent**: Fetches species data from GBIF API
-- **Analysis Agent**: Analyzes occurrence data and identifies conservation insights
-- **Report Agent**: Generates beginner-friendly reports in simple language
+The Wildlife Insight Agent uses three specialized AI agents working through four tasks with MCP tools:
+- **Research Agent**: Uses MCP tools to fetch species data from GBIF API and climate data from Open Meteo API
+- **Analysis Agent**: Analyzes combined species and climate data to identify conservation insights and environmental correlations
+- **Report Agent**: Generates beginner-friendly reports combining biodiversity and climate information
+
+## How It Works
+
+- Research Agent calls two MCP tools:
+  * `fetch_species` → queries GBIF for species data
+  * `fetch_climate_data` → queries Open Meteo API for location-specific climate data
+- Analysis Agent merges both datasets into insights
+- Report Agent summarizes into a human-readable report with climate context
 
 ## Setup
 
-1. Install Python dependencies:
-```bash
-pip install -r requirements.txt
+1. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. Run the project:
+   ```bash
+   python main.py
+   ```
+
+## Example Output
+
 ```
-
-2. Run the application:
-
-### Command Line Interface
-```bash
-python main.py
-```
-
-### Web Interface (Streamlit)
-```bash
-# Option 1: Direct Streamlit command
-streamlit run app.py
-
-# Option 2: Using the launcher script
-python run_web.py
+=== Final Report ===
+Tiger species (Panthera tigris) is classified as endangered.
+Climate data for New York shows max temperatures of 28°C this week.
+The combination highlights how climate and biodiversity trends are linked.
 ```
 
 ## Usage Options
@@ -80,12 +86,12 @@ This application uses the [Global Biodiversity Information Facility (GBIF)](http
 
 ```
 wildlife_insight_agent/
-├── main.py              # Command-line application entry point
-├── app.py               # Streamlit web interface
-├── streamlit_utils.py   # Streamlit-optimized utilities
-├── run_web.py           # Web interface launcher
-├── requirements.txt     # Python dependencies
-├── README.md           # This file
+├── main.py              # Main application entry point with MCP tool registration
+├── requirements.txt     # Python dependencies (including mcp)
+├── README.md           # Project documentation
+├── tools/              # MCP tools directory
+│   ├── species_tool.py # GBIF species data MCP tool
+│   └── climate_tool.py # Climate data MCP tool
 └── .kiro/              # Kiro configuration and specs
 ```
 

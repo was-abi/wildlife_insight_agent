@@ -13,39 +13,20 @@ from crewai import Agent, Task, Crew, LLM
 import sys
 from io import StringIO
 import contextlib
+from tools.species_tool import fetch_species
+from tools.climate_tool import fetch_climate_data
 
 def fetch_species_data_streamlit(query: str) -> dict:
     """
-    Fetch species data from the GBIF API (Streamlit version).
+    Fetch species data using MCP species tool (Streamlit version).
     
     Args:
         query (str): Species name or search term
         
     Returns:
-        dict: JSON response from GBIF API or error information
+        dict: JSON response from GBIF API via MCP tool or error information
     """
-    try:
-        url = f"https://api.gbif.org/v1/species/search?q={query}"
-        response = requests.get(url, timeout=30)
-        response.raise_for_status()
-        
-        data = response.json()
-        return data
-        
-    except requests.exceptions.RequestException as e:
-        error_msg = f"API request failed: {str(e)}"
-        return {
-            "error": error_msg,
-            "results": [],
-            "count": 0
-        }
-    except json.JSONDecodeError as e:
-        error_msg = f"Invalid JSON response: {str(e)}"
-        return {
-            "error": error_msg,
-            "results": [],
-            "count": 0
-        }
+    return fetch_species(query)
 
 @contextlib.contextmanager
 def capture_output():
@@ -125,59 +106,76 @@ def run_wildlife_analysis_streamlit(species_query: str, progress_callback=None):
     if progress_callback:
         progress_callback(40, "Fetching species data...")
     
-    # Get species data
-    species_data = fetch_species_data_streamlit(species_query)
+    # Get species data using MCP tool
+    species_data = fetch_species(species_query)
     
-    # Define Task 1: Research
+    # Get climate data using MCP tool
+    climate_data = fetch_climate_data("New York")
+    
+    # Register MCP tools with the research agent
+    research_agent.tools = [fetch_species, fetch_climate_data]
+    
+    # Define Task 1: Fetch Species Data using MCP tool
     research_task = Task(
-        description=f"""Retrieve information about '{species_query}' from the GBIF API. 
-        Here is the data from the GBIF API: {species_data}
-        
-        Analyze this data and provide a summary of the species information found, 
-        including scientific names, occurrence counts, and any conservation-related details.""",
+        description=f"""Use the fetch_species MCP tool to gather comprehensive data about '{species_query}'. 
+        Call the tool with '{species_query}' as the species name parameter. 
+        Return the complete JSON response including species information, scientific classification, 
+        and any available occurrence data.""",
         agent=research_agent,
-        expected_output=f"Summary of {species_query} species data from GBIF API including key species information and occurrence details"
+        expected_output=f"Complete species data from GBIF API via MCP tool including scientific names, classification, and occurrence information for {species_query}"
     )
     
-    # Define Task 2: Analysis
+    # Define Task 2: Fetch Climate Data using MCP tool
+    climate_task = Task(
+        description="""Use the fetch_climate_data MCP tool to gather current weather and 
+        climate information for New York. Call the tool with 'New York' as the location parameter. 
+        Return the complete JSON response including current weather conditions and forecast data.""",
+        agent=research_agent,
+        expected_output="Complete climate data including current weather conditions, temperature forecasts, and precipitation data for New York"
+    )
+    
+    # Define Task 3: Analysis
     analysis_task = Task(
-        description="""Analyze the species data received from the research task. Extract 
+        description=f"""Analyze the species and climate data from the previous tasks. Extract 
         key information including:
-        - Total number of species found
-        - Scientific names and common names
-        - Conservation status indicators
+        - Total number of {species_query} species found
+        - Scientific names and conservation status
         - Distribution patterns and occurrence counts
-        - Any endangered or threatened species information
+        - Climate context from New York weather data
+        - Potential correlations between environmental conditions and species habitat
         
-        Provide structured insights that can be used for conservation reporting.""",
+        Provide structured insights combining both datasets for conservation reporting.""",
         agent=analysis_agent,
-        expected_output=f"""Structured analysis including species counts, conservation status, 
-        and key findings about {species_query} species distribution and conservation concerns"""
+        expected_output=f"""Structured analysis including {species_query} species counts, conservation status, 
+        climate context, and key findings about species distribution with environmental correlations""",
+        context=[research_task, climate_task]
     )
     
-    # Define Task 3: Report Generation
+    # Define Task 4: Report Generation
     report_task = Task(
-        description=f"""Create a beginner-friendly report based on the analysis insights. 
+        description=f"""Create a comprehensive, beginner-friendly report based on the analysis insights. 
         The report should:
-        - Use simple, non-technical language
-        - Explain key findings about {species_query} species
-        - Highlight conservation concerns and status
-        - Include interesting facts about distribution
-        - Be accessible to students and general public
+        - Use simple, non-technical language suitable for students and conservation enthusiasts
+        - Explain key findings about {species_query} species with climate context
+        - Highlight conservation concerns and environmental relationships
+        - Include interesting facts about distribution and habitat preferences
+        - Connect species data with climate information from New York
         
-        Focus on educational value and conservation awareness.""",
+        Focus on educational value and conservation awareness with environmental context.""",
         agent=report_agent,
         expected_output=f"""A clear, beginner-friendly report about {species_query} species that 
-        includes conservation status, distribution insights, and key findings in simple language"""
+        includes conservation status, climate context, distribution insights, and environmental 
+        correlations in simple language""",
+        context=[analysis_task]
     )
     
     if progress_callback:
         progress_callback(60, "Creating AI crew...")
     
-    # Create the crew
+    # Create the crew with all four tasks
     crew = Crew(
         agents=[research_agent, analysis_agent, report_agent],
-        tasks=[research_task, analysis_task, report_task],
+        tasks=[research_task, climate_task, analysis_task, report_task],
         verbose=False  # Reduced verbosity for Streamlit
     )
     
@@ -198,10 +196,10 @@ def run_wildlife_analysis_streamlit(species_query: str, progress_callback=None):
         if progress_callback:
             progress_callback(100, "Analysis complete!")
         
-        return result, logs, species_data
+        return result, logs, species_data, climate_data
         
     except Exception as e:
         error_msg = f"Error executing crew: {str(e)}"
         if progress_callback:
             progress_callback(0, f"Error: {error_msg}")
-        return None, {'error': error_msg}, species_data
+        return None, {'error': error_msg}, species_data, climate_data

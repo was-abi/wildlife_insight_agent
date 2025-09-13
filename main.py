@@ -1,245 +1,178 @@
-#!/usr/bin/env python3
 """
-Wildlife Insight Agent - A CrewAI-based multi-agent system for wildlife research and reporting.
-
-This application uses three specialized AI agents to fetch, analyze, and report on
-wildlife species data from the Global Biodiversity Information Facility (GBIF) API.
+Wildlife Insight Agent - Main application entry point.
+Uses CrewAI framework with MCP tools for wildlife research and reporting.
 """
-
-import requests
-import json
-import os
 import sys
-from crewai import Agent, Task, Crew, LLM
+from crewai import Agent, Task, Crew
+from tools.species_tool import fetch_species
+from tools.climate_tool import fetch_climate_data
 
 
-def fetch_species_data(query: str) -> dict:
-    """
-    Fetch species data from the GBIF API.
-    
-    Args:
-        query (str): Species name or search term
-        
-    Returns:
-        dict: JSON response from GBIF API or error information
-    """
-    try:
-        url = f"https://api.gbif.org/v1/species/search?q={query}"
-        response = requests.get(url, timeout=30)
-        response.raise_for_status()
-        
-        data = response.json()
-        print(f"✓ Successfully fetched data for '{query}' - Found {data.get('count', 0)} results")
-        return data
-        
-    except requests.exceptions.RequestException as e:
-        error_msg = f"API request failed: {str(e)}"
-        print(f"✗ {error_msg}")
-        return {
-            "error": error_msg,
-            "results": [],
-            "count": 0
-        }
-    except json.JSONDecodeError as e:
-        error_msg = f"Invalid JSON response: {str(e)}"
-        print(f"✗ {error_msg}")
-        return {
-            "error": error_msg,
-            "results": [],
-            "count": 0
-        }
-
-
-def run_wildlife_analysis(species_query: str):
-    """
-    Run the wildlife analysis pipeline for a specific species query.
-    
-    Args:
-        species_query (str): The species to search for (e.g., 'tiger', 'whale', 'elephant', 'pug')
-    
-    Returns:
-        str: The final report or None if failed
-    """
-    print(f"🐾 Starting Wildlife Insight Agent for '{species_query}'...")
-    print("=" * 60)
-    
-    # Configure Gemini LLM
-    gemini_llm = LLM(
-        model="gemini/gemini-1.5-flash",
-        api_key="AIzaSyBaWl8qVr0EFMOMlWNFycPRJyf4xAsmsWI"
-    )
-    
-    # Define the Research Agent
-    research_agent = Agent(
+def create_research_agent():
+    """Create the Research Agent for data fetching."""
+    return Agent(
         role="Wildlife Researcher",
-        goal="Fetch species data from the GBIF API",
-        backstory="""You are an expert wildlife researcher with deep knowledge of 
-        biodiversity databases and scientific data sources. You specialize in retrieving 
-        accurate species information from the Global Biodiversity Information Facility (GBIF) 
-        and ensuring data quality for conservation research.""",
+        goal="Fetch comprehensive species and climate data using MCP tools",
+        backstory=(
+            "You are an expert wildlife researcher with deep knowledge of "
+            "biodiversity databases and climate data sources. You specialize "
+            "in using standardized MCP tools to gather accurate scientific "
+            "information from the Global Biodiversity Information Facility "
+            "and climate APIs."
+        ),
         verbose=True,
-        allow_delegation=False,
-        llm=gemini_llm
+        allow_delegation=False
     )
-    
-    # Define the Analysis Agent
-    analysis_agent = Agent(
+
+
+def create_analysis_agent():
+    """Create the Analysis Agent for data processing."""
+    return Agent(
         role="Data Analyst",
-        goal="Analyze species occurrence data and extract key insights",
-        backstory="""You are a skilled data analyst specializing in biodiversity and 
-        conservation science. You excel at finding patterns in species occurrence data, 
-        identifying endangered species, and extracting meaningful trends from complex 
-        biological datasets for conservation purposes.""",
+        goal="Analyze species and climate data to identify conservation insights",
+        backstory=(
+            "You are a skilled data analyst specializing in biodiversity and "
+            "environmental data. You excel at finding patterns in species "
+            "distribution, identifying endangered status indicators, and "
+            "correlating wildlife data with climate conditions to generate "
+            "meaningful conservation insights."
+        ),
         verbose=True,
-        allow_delegation=False,
-        llm=gemini_llm
+        allow_delegation=False
     )
-    
-    # Define the Report Agent
-    report_agent = Agent(
+
+
+def create_report_agent():
+    """Create the Report Agent for generating user-friendly reports."""
+    return Agent(
         role="Report Writer",
-        goal="Summarize the analysis in simple, beginner-friendly language",
-        backstory="""You are an experienced science communicator who specializes in 
-        making complex wildlife and conservation data accessible to students and the 
-        general public. You excel at writing clear, engaging reports that help people 
-        understand important conservation issues.""",
+        goal="Create beginner-friendly reports about wildlife and climate findings",
+        backstory=(
+            "You are an experienced science communicator who specializes in "
+            "translating complex biodiversity and climate research into "
+            "accessible, engaging reports for students and conservationists. "
+            "You use simple language while maintaining scientific accuracy."
+        ),
         verbose=True,
-        allow_delegation=False,
-        llm=gemini_llm
+        allow_delegation=False
     )
+
+
+def create_tasks(research_agent, analysis_agent, report_agent):
+    """Create the four sequential tasks for the wildlife research pipeline."""
     
-    # Define Task 1: Research
-    research_task = Task(
-        description=f"""Retrieve information about '{species_query}' from the GBIF API. 
-        Here is the data from the GBIF API: {fetch_species_data(species_query)}
-        
-        Analyze this data and provide a summary of the species information found, 
-        including scientific names, occurrence counts, and any conservation-related details.""",
+    # Task 1: Fetch species data using MCP tool
+    task1 = Task(
+        description=(
+            "Use the fetch_species MCP tool to gather comprehensive data about tigers. "
+            "Call the tool with 'tiger' as the species name parameter. "
+            "Return the complete JSON response including species information, "
+            "scientific classification, and any available occurrence data."
+        ),
         agent=research_agent,
-        expected_output=f"Summary of {species_query} species data from GBIF API including key species information and occurrence details"
+        expected_output=(
+            "Complete species data from GBIF API including scientific name, "
+            "classification hierarchy, and occurrence information for tigers."
+        )
     )
     
-    # Define Task 2: Analysis
-    analysis_task = Task(
-        description="""Analyze the species data received from the research task. Extract 
-        key information including:
-        - Total number of species found
-        - Scientific names and common names
-        - Conservation status indicators
-        - Distribution patterns and occurrence counts
-        - Any endangered or threatened species information
-        
-        Provide structured insights that can be used for conservation reporting.""",
+    # Task 2: Fetch climate data using MCP tool  
+    task2 = Task(
+        description=(
+            "Use the fetch_climate_data MCP tool to gather current weather and "
+            "climate information for New York. Call the tool with 'New York' "
+            "as the location parameter. Return the complete JSON response "
+            "including current weather conditions and forecast data."
+        ),
+        agent=research_agent,
+        expected_output=(
+            "Complete climate data including current weather conditions, "
+            "temperature forecasts, and precipitation data for New York."
+        )
+    )
+    
+    # Task 3: Analyze combined data
+    task3 = Task(
+        description=(
+            "Analyze the species and climate data from the previous tasks. "
+            "Extract key information including: species occurrence counts, "
+            "conservation status indicators, distribution patterns, "
+            "temperature trends, and potential correlations between "
+            "climate conditions and species habitat preferences. "
+            "Focus on conservation insights and environmental relationships."
+        ),
         agent=analysis_agent,
-        expected_output=f"""Structured analysis including species counts, conservation status, 
-        and key findings about {species_query} species distribution and conservation concerns"""
+        expected_output=(
+            "Structured analysis including species occurrence statistics, "
+            "conservation status assessment, climate pattern summary, "
+            "and identified correlations between environmental conditions "
+            "and species distribution."
+        ),
+        context=[task1, task2]
     )
     
-    # Define Task 3: Report Generation
-    report_task = Task(
-        description=f"""Create a beginner-friendly report based on the analysis insights. 
-        The report should:
-        - Use simple, non-technical language
-        - Explain key findings about {species_query} species
-        - Highlight conservation concerns and status
-        - Include interesting facts about distribution
-        - Be accessible to students and general public
-        
-        Focus on educational value and conservation awareness.""",
+    # Task 4: Generate final report
+    task4 = Task(
+        description=(
+            "Create a comprehensive, beginner-friendly report summarizing "
+            "the wildlife and climate findings. Use simple, non-technical "
+            "language suitable for students and conservation enthusiasts. "
+            "Include key conservation insights, climate context, and "
+            "explain the importance of the findings for wildlife protection."
+        ),
         agent=report_agent,
-        expected_output=f"""A clear, beginner-friendly report about {species_query} species that 
-        includes conservation status, distribution insights, and key findings in simple language"""
+        expected_output=(
+            "A clear, accessible report in simple language that explains "
+            "the tiger species information, climate conditions, conservation "
+            "status, and the relationship between environmental factors "
+            "and wildlife conservation."
+        ),
+        context=[task3]
     )
     
-    # Create the crew
-    crew = Crew(
-        agents=[research_agent, analysis_agent, report_agent],
-        tasks=[research_task, analysis_task, report_task],
-        verbose=True
-    )
-    
+    return [task1, task2, task3, task4]
+
+
+def main():
+    """Main function to execute the wildlife insight agent pipeline."""
     try:
-        print("🚀 Executing CrewAI pipeline...")
-        print("-" * 30)
+        print("Initializing Wildlife Insight Agent...")
+        print("Setting up MCP tools and CrewAI agents...")
+        
+        # Create agents
+        research_agent = create_research_agent()
+        analysis_agent = create_analysis_agent()
+        report_agent = create_report_agent()
+        
+        # Create tasks
+        tasks = create_tasks(research_agent, analysis_agent, report_agent)
+        
+        # Register MCP tools with agents
+        research_agent.tools = [fetch_species, fetch_climate_data]
+        
+        # Create and configure the crew
+        crew = Crew(
+            agents=[research_agent, analysis_agent, report_agent],
+            tasks=tasks,
+            verbose=True
+        )
+        
+        print("\nStarting wildlife research pipeline...")
+        print("=" * 50)
         
         # Execute the crew
         result = crew.kickoff()
         
-        print("\n" + "=" * 60)
-        print(f"📋 FINAL WILDLIFE INSIGHT REPORT - {species_query.upper()}")
-        print("=" * 60)
+        # Display final report
+        print("\n" + "=" * 50)
+        print("=== Final Report ===")
+        print("=" * 50)
         print(result)
-        print("=" * 60)
         
         return result
         
     except Exception as e:
-        print(f"❌ Error executing crew: {str(e)}")
-        return None
-
-
-def main():
-    """
-    Main function with command-line interface for species selection.
-    """
-    # Available species options
-    available_species = {
-        "1": "tiger",
-        "2": "whale", 
-        "3": "elephant",
-        "4": "pug"
-    }
-    
-    # Check if species was provided as command line argument
-    if len(sys.argv) > 1:
-        species_query = sys.argv[1].lower()
-        print(f"🔍 Running analysis for: {species_query}")
-        return run_wildlife_analysis(species_query)
-    
-    # Interactive menu
-    print("🌍 Welcome to the Wildlife Insight Agent!")
-    print("=" * 50)
-    print("Choose a species to analyze:")
-    print("1. 🐅 Tiger")
-    print("2. 🐋 Whale") 
-    print("3. 🐘 Elephant")
-    print("4. 🐶 Pug")
-    print("5. 🔍 Custom species (enter your own)")
-    print("6. 🚀 Run all species")
-    print("=" * 50)
-    
-    choice = input("Enter your choice (1-6): ").strip()
-    
-    if choice in available_species:
-        species_query = available_species[choice]
-        return run_wildlife_analysis(species_query)
-    elif choice == "5":
-        species_query = input("Enter the species name to search for: ").strip()
-        if species_query:
-            return run_wildlife_analysis(species_query)
-        else:
-            print("❌ No species name provided!")
-            return None
-    elif choice == "6":
-        print("🚀 Running analysis for all available species...")
-        results = {}
-        for species in available_species.values():
-            print(f"\n{'='*20} ANALYZING {species.upper()} {'='*20}")
-            results[species] = run_wildlife_analysis(species)
-            print(f"\n{'='*20} COMPLETED {species.upper()} {'='*20}")
-        
-        # Summary
-        print("\n" + "🌟" * 60)
-        print("📊 SUMMARY OF ALL SPECIES ANALYSES")
-        print("🌟" * 60)
-        for species, result in results.items():
-            status = "✅ Success" if result else "❌ Failed"
-            print(f"{species.capitalize()}: {status}")
-        print("🌟" * 60)
-        
-        return results
-    else:
-        print("❌ Invalid choice! Please run the program again.")
+        print(f"Error executing wildlife insight agent: {str(e)}")
         return None
 
 

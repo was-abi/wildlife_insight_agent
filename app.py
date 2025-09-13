@@ -241,7 +241,7 @@ def main():
             
             # Capture the analysis output
             with st.spinner("Running CrewAI analysis pipeline..."):
-                result, logs, final_species_data = run_wildlife_analysis_streamlit(
+                result, logs, final_species_data, climate_data = run_wildlife_analysis_streamlit(
                     species_query, 
                     progress_callback=update_progress
                 )
@@ -272,39 +272,79 @@ def main():
                     st.markdown(result)
                 
                 with tab2:
-                    # Create visualizations if we have data
-                    if species_count > 0:
-                        # Species count chart
-                        fig = go.Figure(data=go.Bar(
-                            x=[species_query.title()],
-                            y=[species_count],
-                            marker_color='#2E8B57'
-                        ))
-                        fig.update_layout(
-                            title=f"Species Records Found for '{species_query.title()}'",
-                            xaxis_title="Species Query",
-                            yaxis_title="Number of Records",
-                            showlegend=False
-                        )
-                        st.plotly_chart(fig, use_container_width=True)
-                        
-                        # Sample data visualization
-                        if 'results' in species_data and species_data['results']:
-                            # Create a simple taxonomy breakdown
-                            kingdoms = {}
-                            for result in species_data['results'][:10]:  # First 10 results
-                                kingdom = result.get('kingdom', 'Unknown')
-                                kingdoms[kingdom] = kingdoms.get(kingdom, 0) + 1
+                    # Create two columns for species and climate data
+                    col_species, col_climate = st.columns(2)
+                    
+                    with col_species:
+                        st.markdown("#### 🐾 Species Data Insights")
+                        # Create visualizations if we have data
+                        if species_count > 0:
+                            # Species count chart
+                            fig = go.Figure(data=go.Bar(
+                                x=[species_query.title()],
+                                y=[species_count],
+                                marker_color='#2E8B57'
+                            ))
+                            fig.update_layout(
+                                title=f"Species Records Found",
+                                xaxis_title="Species Query",
+                                yaxis_title="Number of Records",
+                                showlegend=False,
+                                height=400
+                            )
+                            st.plotly_chart(fig, use_container_width=True)
                             
-                            if kingdoms:
-                                fig_pie = px.pie(
-                                    values=list(kingdoms.values()),
-                                    names=list(kingdoms.keys()),
-                                    title=f"Taxonomic Kingdoms for '{species_query.title()}' (Sample)"
+                            # Sample data visualization
+                            if 'results' in species_data and species_data['results']:
+                                # Create a simple taxonomy breakdown
+                                kingdoms = {}
+                                for result in species_data['results'][:10]:  # First 10 results
+                                    kingdom = result.get('kingdom', 'Unknown')
+                                    kingdoms[kingdom] = kingdoms.get(kingdom, 0) + 1
+                                
+                                if kingdoms:
+                                    fig_pie = px.pie(
+                                        values=list(kingdoms.values()),
+                                        names=list(kingdoms.keys()),
+                                        title=f"Taxonomic Kingdoms (Sample)"
+                                    )
+                                    fig_pie.update_layout(height=400)
+                                    st.plotly_chart(fig_pie, use_container_width=True)
+                        else:
+                            st.info("No occurrence data available for visualization.")
+                    
+                    with col_climate:
+                        st.markdown("#### 🌤️ Climate Data Insights")
+                        # Climate data visualization
+                        if climate_data and 'current_weather' in climate_data:
+                            current_temp = climate_data['current_weather'].get('temperature', 0)
+                            wind_speed = climate_data['current_weather'].get('windspeed', 0)
+                            
+                            # Current weather metrics
+                            st.metric("Current Temperature", f"{current_temp}°C")
+                            st.metric("Wind Speed", f"{wind_speed} km/h")
+                            
+                            # Temperature forecast chart
+                            if 'daily' in climate_data and 'temperature_2m_max' in climate_data['daily']:
+                                temps = climate_data['daily']['temperature_2m_max'][:7]  # 7 days
+                                days = [f"Day {i+1}" for i in range(len(temps))]
+                                
+                                fig_temp = go.Figure(data=go.Scatter(
+                                    x=days,
+                                    y=temps,
+                                    mode='lines+markers',
+                                    line=dict(color='#FF6B6B', width=3),
+                                    marker=dict(size=8)
+                                ))
+                                fig_temp.update_layout(
+                                    title="7-Day Temperature Forecast (New York)",
+                                    xaxis_title="Days",
+                                    yaxis_title="Temperature (°C)",
+                                    height=300
                                 )
-                                st.plotly_chart(fig_pie, use_container_width=True)
-                    else:
-                        st.info("No occurrence data available for visualization.")
+                                st.plotly_chart(fig_temp, use_container_width=True)
+                        else:
+                            st.info("Climate data not available for visualization.")
                 
                 with tab3:
                     st.markdown("### 🔬 Technical Analysis Details")
@@ -336,13 +376,26 @@ def main():
                         df = pd.DataFrame(sample_data)
                         st.dataframe(df, use_container_width=True)
                     
+                    # Climate data summary
+                    if climate_data and 'current_weather' in climate_data:
+                        st.markdown("#### Climate Data Summary")
+                        climate_col_a, climate_col_b, climate_col_c = st.columns(3)
+                        with climate_col_a:
+                            st.metric("Location", "New York")
+                        with climate_col_b:
+                            st.metric("Current Temp", f"{climate_data['current_weather'].get('temperature', 'N/A')}°C")
+                        with climate_col_c:
+                            st.metric("Wind Speed", f"{climate_data['current_weather'].get('windspeed', 'N/A')} km/h")
+                    
                     # Analysis metadata
                     st.markdown("#### Analysis Metadata")
                     metadata = {
-                        'Query': species_query,
+                        'Species Query': species_query,
                         'Analysis Time': f"{elapsed_time:.2f} seconds",
                         'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        'API Endpoint': f"https://api.gbif.org/v1/species/search?q={species_query}",
+                        'Species API': f"https://api.gbif.org/v1/species/search?q={species_query}",
+                        'Climate API': "https://api.open-meteo.com/v1/forecast",
+                        'MCP Tools Used': "fetch_species, fetch_climate_data",
                         'AI Model': "Gemini 1.5 Flash",
                         'Framework': "CrewAI"
                     }
